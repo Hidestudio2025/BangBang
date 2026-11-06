@@ -68,6 +68,13 @@
   .char input:checked + .box{border-color:var(--red);box-shadow:0 0 0 2px var(--red) inset}
   .submit{display:block;width:100%;padding:16px;border:0;border-radius:999px;background:var(--red);
     color:#fff;font:600 17px Inter,sans-serif;cursor:pointer;margin-top:8px}
+  .submit:disabled{opacity:.6}
+  .status{font-size:14px;margin:12px 0 0;text-align:center;color:var(--red)}
+  .status:empty{display:none}
+  .alt{font-size:13px;text-align:center;opacity:.75;margin:14px 0 0}
+  .alt a{color:var(--ink)}
+  .thanks{text-align:center;padding:40px 18px}
+  .thanks h2{font-size:32px;color:var(--red);margin-bottom:8px}
   footer{text-align:center;font-size:12px;letter-spacing:.14em;text-transform:uppercase;opacity:.6;margin-top:28px}
 </style>
 </head>
@@ -209,9 +216,70 @@
     </div>
   </section>
 
-  <button class="submit" type="submit">Send to Hide Studio</button>
+  <button class="submit" type="submit" id="sendBtn">Send to Hide Studio</button>
+  <p class="status" id="status" role="status" aria-live="polite"></p>
+  <p class="alt">Trouble sending? <a href="#" id="emailLink">Email your answers instead</a></p>
 </form>
+<section class="thanks" id="thanks" hidden>
+  <h2>Thank you</h2>
+  <p>Your answers are with Hide Studio. We'll be in touch with the refined direction shortly.</p>
+</section>
 <footer>Hide Studio®</footer>
 </div>
+<script>
+(function(){
+  var TO = 'shereen@hidestudio.design';
+  var form = document.querySelector('form');
+  var btn = document.getElementById('sendBtn');
+  var status = document.getElementById('status');
+
+  function collect(){
+    var fd = new FormData(form), out = {}, order = [];
+    fd.forEach(function(v, k){
+      if (k.charAt(0) === '_') return;
+      v = String(v).trim();
+      if (!v) return;
+      if (out[k]) { out[k] += ', ' + v; } else { out[k] = v; order.push(k); }
+    });
+    return { data: out, order: order };
+  }
+
+  function emailFallback(){
+    var c = collect();
+    var lines = c.order.map(function(k){ return k + ': ' + c.data[k]; });
+    var body = 'Bang Bang logo feedback\n\n' + (lines.length ? lines.join('\n') : '(no answers filled in)');
+    window.location.href = 'mailto:' + TO +
+      '?subject=' + encodeURIComponent('Bang Bang — logo feedback') +
+      '&body=' + encodeURIComponent(body);
+  }
+
+  document.getElementById('emailLink').addEventListener('click', function(e){
+    e.preventDefault(); emailFallback();
+  });
+
+  form.addEventListener('submit', function(e){
+    e.preventDefault();
+    var c = collect();
+    if (!c.order.length) { status.textContent = 'Please answer at least one question first.'; return; }
+    btn.disabled = true; btn.textContent = 'Sending…'; status.textContent = '';
+    var payload = Object.assign({ _subject: 'Bang Bang — logo feedback', _template: 'table', _captcha: 'false' }, c.data);
+    fetch('https://formsubmit.co/ajax/' + TO, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      body: JSON.stringify(payload)
+    }).then(function(r){ return r.json(); }).then(function(res){
+      if (res && String(res.success) === 'true') {
+        form.hidden = true;
+        document.getElementById('thanks').hidden = false;
+        window.scrollTo(0, 0);
+      } else { throw new Error(res && res.message || 'failed'); }
+    }).catch(function(){
+      btn.disabled = false; btn.textContent = 'Send to Hide Studio';
+      status.textContent = "That didn't go through, so we've opened an email with your answers filled in. Just tap send.";
+      emailFallback();
+    });
+  });
+})();
+</script>
 </body>
 </html>
