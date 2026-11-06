@@ -76,6 +76,7 @@
   .alt-btns{display:flex;gap:8px;justify-content:center;margin-top:8px}
   .alt-btn{flex:1;max-width:140px;padding:12px 10px;border:1.5px solid var(--ink);border-radius:999px;
     background:transparent;color:var(--ink);font:600 14px Inter,sans-serif;cursor:pointer}
+  .alt-btn.pulse{background:var(--ink);color:var(--paper)}
   .thanks{text-align:center;padding:40px 18px}
   .thanks h2{font-size:32px;color:var(--red);margin-bottom:8px}
   footer{text-align:center;font-size:12px;letter-spacing:.14em;text-transform:uppercase;opacity:.6;margin-top:28px}
@@ -289,18 +290,25 @@
     if (!c.order.length) { status.textContent = 'Please answer at least one question first.'; return; }
     btn.disabled = true; btn.textContent = 'Sending…'; status.textContent = '';
     var payload = Object.assign({ _subject: 'Bang Bang — logo feedback', _template: 'table', _captcha: 'false' }, c.data);
+    var body = new URLSearchParams();
+    Object.keys(payload).forEach(function(k){ body.append(k, payload[k]); });
+    var ctrl = ('AbortController' in window) ? new AbortController() : null;
+    var timer = setTimeout(function(){ if (ctrl) ctrl.abort(); }, 10000);
     fetch('https://formsubmit.co/ajax/' + TO, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-      body: JSON.stringify(payload)
-    }).then(function(r){ return r.json(); }).then(function(res){
+      headers: { 'Accept': 'application/json' },
+      body: body,
+      signal: ctrl ? ctrl.signal : undefined
+    }).then(function(r){ clearTimeout(timer); return r.json(); }).then(function(res){
       if (res && String(res.success) === 'true') {
         form.hidden = true;
         document.getElementById('thanks').hidden = false;
         window.scrollTo(0, 0);
       } else { throw new Error(res && res.message || 'failed'); }
     }).catch(function(){
+      clearTimeout(timer);
       btn.disabled = false; btn.textContent = 'Send to Hide Studio';
+      document.getElementById('waBtn').classList.add('pulse');
       status.textContent = "That didn't go through. Please tap WhatsApp or Email below to send your answers instead.";
     });
   });
