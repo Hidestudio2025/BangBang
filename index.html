@@ -91,10 +91,7 @@
   <a class="btn-link" href="https://canva.link/6phu0kcg4cwnrbd" target="_blank" rel="noopener">View the full deck ↗</a>
 </header>
 
-<form action="https://formsubmit.co/shereen@hidestudio.design" method="POST">
-  <input type="hidden" name="_subject" value="Bang Bang — logo feedback">
-  <input type="hidden" name="_template" value="table">
-  <input type="hidden" name="_captcha" value="false">
+<form action="https://api.web3forms.com/submit" method="POST">
 
   <section>
     <h2><span>1</span>Rank the shortlist</h2>
@@ -289,12 +286,14 @@
     var c = collect();
     if (!c.order.length) { status.textContent = 'Please answer at least one question first.'; return; }
     btn.disabled = true; btn.textContent = 'Sending…'; status.textContent = '';
-    var payload = Object.assign({ _subject: 'Bang Bang — logo feedback', _template: 'table', _captcha: 'false' }, c.data);
-    var body = new URLSearchParams();
-    Object.keys(payload).forEach(function(k){ body.append(k, payload[k]); });
+    var body = new FormData();
+    body.append('access_key', '12c0fab5-fb02-4126-ad9c-3409b311dc92');
+    body.append('subject', 'Bang Bang — logo feedback');
+    body.append('from_name', 'Bang Bang feedback form');
+    c.order.forEach(function(k){ body.append(k, c.data[k]); });
     var ctrl = ('AbortController' in window) ? new AbortController() : null;
-    var timer = setTimeout(function(){ if (ctrl) ctrl.abort(); }, 10000);
-    fetch('https://formsubmit.co/ajax/' + TO, {
+    var timer = setTimeout(function(){ if (ctrl) ctrl.abort(); }, 15000);
+    fetch('https://api.web3forms.com/submit', {
       method: 'POST',
       headers: { 'Accept': 'application/json' },
       body: body,
